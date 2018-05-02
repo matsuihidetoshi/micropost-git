@@ -6,12 +6,20 @@ class User < ApplicationRecord
                     uniqueness: { case_sensitive: false }
   has_secure_password
   
+  
   has_many :microposts
+  
+  #relationship関係
   has_many :relationships
   has_many :followings, through: :relationships, source: :follow
   has_many :reverses_of_relationship, class_name: 'Relationship', foreign_key: 'follow_id'
   has_many :followers, through: :reverses_of_relationship, source: :user
 
+  #like関係
+  has_many :likes
+  has_many :likings, through: :likes, source: :micropost
+
+  #relationship関係
   def follow(other_user)
     unless self == other_user
       self.relationships.find_or_create_by(follow_id: other_user.id)
@@ -27,6 +35,21 @@ class User < ApplicationRecord
     self.followings.include?(other_user)
   end
   
+  #like関係
+  def like(post)
+    self.likes.find_or_create_by(micropost_id: post.id)
+  end
+  
+  def dislike(post)
+    like = self.likes.find_by(micropost_id: post.id)
+    like.destroy if like
+  end
+
+  def liking?(post)
+    self.likings.include?(post)
+  end
+  
+  #フィード
   def feed_microposts
     Micropost.where(user_id: self.following_ids + [self.id])
   end
